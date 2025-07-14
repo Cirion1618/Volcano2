@@ -87,6 +87,31 @@
 
     const customWorkflows = {};
 
+    function saveWorkflows() {
+      try {
+        localStorage.setItem('customWorkflows', JSON.stringify(customWorkflows));
+      } catch (e) {
+        console.error('Failed to save workflows', e);
+      }
+    }
+
+    function loadWorkflows() {
+      try {
+        const data = localStorage.getItem('customWorkflows');
+        if (!data) return;
+        const stored = JSON.parse(data);
+        Object.keys(stored).forEach(name => {
+          customWorkflows[name] = stored[name];
+          const btn = document.createElement('button');
+          btn.textContent = '🚀 Run ' + name;
+          btn.onclick = () => runWorkflow(customWorkflows[name]);
+          document.getElementById('controls').appendChild(btn);
+        });
+      } catch (e) {
+        console.error('Failed to load workflows', e);
+      }
+    }
+
     const workflowX_temperature = [175, 180, 185, 190, 195];
     const workflowX_holdTimeInMilliSeconds = [10000, 5000, 5000, 5000, 5000];
     const workflowX_pumpTimeInMilliSeconds = [6000, 6000, 7000, 7000, 8000];
@@ -302,6 +327,8 @@
         pumpTimeInMilliSeconds: pumps
       };
 
+      saveWorkflows();
+
       const btn = document.createElement('button');
       btn.textContent = '🚀 Run ' + name;
       btn.onclick = () => runWorkflow(customWorkflows[name]);
@@ -412,10 +439,10 @@
       }
     }
 
-    
+    // Restore previously saved workflows on page load
+    loadWorkflows();
 
 
-    
   </script>
 </body>
 </html>

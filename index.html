@@ -112,7 +112,6 @@
       }
     }
 
-
     const workflowX_temperature = [175, 180, 185, 190, 195];
     const workflowX_holdTimeInMilliSeconds = [10000, 5000, 5000, 5000, 5000];
     const workflowX_pumpTimeInMilliSeconds = [6000, 6000, 7000, 7000, 8000];
@@ -286,7 +285,6 @@
         }
       } finally {
         workflowActive = false;
-
       }
     }
 
@@ -337,56 +335,6 @@
       document.getElementById('controls').appendChild(btn);
       log('Added workflow ' + name);
     }
-
-      }
-    }
-
-    function runWorkflowX() {
-      runWorkflow({
-        name: 'Workflow X',
-        temperature: workflowX_temperature,
-        holdTimeInMilliSeconds: workflowX_holdTimeInMilliSeconds,
-        pumpTimeInMilliSeconds: workflowX_pumpTimeInMilliSeconds
-      });
-    }
-
-    function addCustomWorkflow() {
-      const name = prompt('Workflow name:');
-      if (!name) return;
-      const tempInput = prompt('Temperatures (comma separated °C):');
-      if (!tempInput) return;
-      const holdInput = prompt('Hold times (comma separated ms):');
-      if (!holdInput) return;
-      const pumpInput = prompt('Pump times (comma separated ms, max 35000):');
-      if (!pumpInput) return;
-
-      const temps = tempInput.split(',').map(v => parseInt(v.trim(), 10));
-      const holds = holdInput.split(',').map(v => parseInt(v.trim(), 10));
-      const pumps = pumpInput.split(',').map(v => parseInt(v.trim(), 10));
-
-      if (temps.length !== holds.length || temps.length !== pumps.length) {
-        alert('Arrays must be of equal length');
-        return;
-      }
-      if (pumps.some(p => isNaN(p) || p > 35000)) {
-        alert('Pump times must be numbers ≤ 35000');
-        return;
-      }
-
-      customWorkflows[name] = {
-        name,
-        temperature: temps,
-        holdTimeInMilliSeconds: holds,
-        pumpTimeInMilliSeconds: pumps
-      };
-
-      const btn = document.createElement('button');
-      btn.textContent = '🚀 Run ' + name;
-      btn.onclick = () => runWorkflow(customWorkflows[name]);
-      document.getElementById('controls').appendChild(btn);
-      log('Added workflow ' + name);
-    }
-
 
 
     function abortWorkflow() {

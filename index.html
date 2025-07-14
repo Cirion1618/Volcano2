@@ -4,7 +4,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Volcano Hybrid Test Control v2.01</title>
+  <title>Volcano Hybrid Test Control v2.04</title>
   <style>
     body {
       background:#1e1e1e;
@@ -53,7 +53,7 @@
   </style>
 </head>
 <body>
-   <h2>Volcano Hybrid - Advanced Control Panel (v2.01)</h2>
+   <h2>Volcano Hybrid - Advanced Control Panel (v2.04)</h2>
   <div id="controls">
     <button onclick="connect()">🔗 Connect to Volcano</button>
     <button onclick="runWorkflowX()">🚀 Start Custom Workflow X</button>
@@ -168,8 +168,8 @@
       let total = 0;
       let current = await getCurrentTemp();
       for (let i = 0; i < temps.length; i++) {
-        const target = temps[i] * 10;
-        const heatTime = Math.max(target - current, 0); // 10°C per 100ms => 1 tenth °C per ms
+        const target = temps[i] * 5;
+        const heatTime = Math.max(target - current, 0); // 5°C per 100ms => 0,5 tenth °C per ms
         total += heatTime + holds[i] + pumps[i];
         current = target;
       }

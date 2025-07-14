@@ -132,30 +132,26 @@
       if (bar) bar.style.width = percent + '%';
     }
 
-    let progressTimer = null;
-    let progressStartTime = 0;
-    let progressTotalTime = 0;
+    let progressTotalSteps = 0;
+    let progressCurrentStep = 0;
 
-    function startProgress(totalMs) {
-      progressTotalTime = totalMs;
-      progressStartTime = Date.now();
+    function startProgressSteps(totalSteps) {
+      progressTotalSteps = totalSteps;
+      progressCurrentStep = 0;
       updateProgress(0);
-      if (progressTimer) clearInterval(progressTimer);
-      progressTimer = setInterval(() => {
-        const elapsed = Date.now() - progressStartTime;
-        updateProgress(Math.min((elapsed / progressTotalTime) * 100, 100));
-        if (elapsed >= progressTotalTime) {
-          clearInterval(progressTimer);
-          progressTimer = null;
-        }
-      }, 100);
+    }
+
+    function advanceProgressStep() {
+      progressCurrentStep++;
+      if (progressTotalSteps > 0) {
+        updateProgress(Math.min((progressCurrentStep / progressTotalSteps) * 100, 100));
+      }
     }
 
     function stopProgress() {
-      if (progressTimer) {
-        clearInterval(progressTimer);
-        progressTimer = null;
-      }
+      progressTotalSteps = 0;
+      progressCurrentStep = 0;
+      updateProgress(0);
     }
 
     async function getCurrentTemp() {
@@ -271,8 +267,7 @@
       log(`========= START ${config.name || "WORKFLOW"} =========`);
 
       try {
-        const totalTime = await estimateTotalTime(temps, holds, pumps);
-        startProgress(totalTime);
+        startProgressSteps(temps.length);
         await stopPump();
         await sleep(300);
         await stopHeater();
@@ -315,6 +310,7 @@
           }
 
           await wait(500);
+          advanceProgressStep();
         }
 
         await stopPump();

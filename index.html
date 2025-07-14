@@ -168,8 +168,10 @@
       let total = 0;
       let current = await getCurrentTemp();
       for (let i = 0; i < temps.length; i++) {
-        const target = temps[i] * 5;
-        const heatTime = Math.max(target - current, 0); // 5°C per 100ms => 0,5 tenth °C per ms
+        // Convert target temperature to tenth °C
+        const target = temps[i] * 10;
+        // Heating rate: 2°C per 100 ms => 0.2 tenth °C per ms
+        const heatTime = Math.max(target - current, 0) * 5;
         total += heatTime + holds[i] + pumps[i];
         current = target;
       }

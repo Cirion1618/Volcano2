@@ -132,6 +132,50 @@
       if (bar) bar.style.width = percent + '%';
     }
 
+    let progressTimer = null;
+    let progressStartTime = 0;
+    let progressTotalTime = 0;
+
+    function startProgress(totalMs) {
+      progressTotalTime = totalMs;
+      progressStartTime = Date.now();
+      updateProgress(0);
+      if (progressTimer) clearInterval(progressTimer);
+      progressTimer = setInterval(() => {
+        const elapsed = Date.now() - progressStartTime;
+        updateProgress(Math.min((elapsed / progressTotalTime) * 100, 100));
+        if (elapsed >= progressTotalTime) {
+          clearInterval(progressTimer);
+          progressTimer = null;
+        }
+      }, 100);
+    }
+
+    function stopProgress() {
+      if (progressTimer) {
+        clearInterval(progressTimer);
+        progressTimer = null;
+      }
+    }
+
+    async function getCurrentTemp() {
+      const char = await service.getCharacteristic('10110001-5354-4f52-5a26-4249434b454c');
+      const value = await char.readValue();
+      return new DataView(value.buffer).getUint16(0, true);
+    }
+
+    async function estimateTotalTime(temps, holds, pumps) {
+      let total = 0;
+      let current = await getCurrentTemp();
+      for (let i = 0; i < temps.length; i++) {
+        const target = temps[i] * 10;
+        const heatTime = Math.max(target - current, 0); // 10°C per 100ms => 1 tenth °C per ms
+        total += heatTime + holds[i] + pumps[i];
+        current = target;
+      }
+      return total;
+    }
+
     function clearLog() {
       document.getElementById('log').innerText = '';
     }
@@ -225,6 +269,8 @@
       log(`========= START ${config.name || "WORKFLOW"} =========`);
 
       try {
+        const totalTime = await estimateTotalTime(temps, holds, pumps);
+        startProgress(totalTime);
         await stopPump();
         await sleep(300);
         await stopHeater();
@@ -267,24 +313,26 @@
           }
 
           await wait(500);
-          updateProgress(((i + 1) / temps.length) * 100);
         }
 
         await stopPump();
         await stopHeater();
+        stopProgress();
         updateProgress(100);
         log("✅ Workflow completed.");
       } catch (e) {
         if (e.message === "Aborted") {
           log("❌ Workflow aborted.");
-          updateProgress(0);
           await stopPump();
           await stopHeater();
+          stopProgress();
+          updateProgress(0);
         } else {
           log("⚠️ Error during workflow: " + e);
         }
       } finally {
         workflowActive = false;
+        stopProgress();
       }
     }
 

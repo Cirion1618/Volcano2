@@ -2,86 +2,86 @@
  <html lang="en">
  <head>
    <meta charset="UTF-8">
-+  <title>Volcano Hybrid Test Control v0.33</title>
-+  <style>
-+    body {
-+      background:#1e1e1e;
-+      color:#f9f9f9;
-+      font-family:Arial,Helvetica,sans-serif;
-+      margin:2em;
-+    }
-+    h2 {
-+      text-align:center;
-+      margin-bottom:1em;
-+    }
-+    button {
-+      background:#333;
-+      color:#fff;
-+      border:1px solid #555;
-+      padding:0.5em 1em;
-+      margin:0.3em;
-+      border-radius:4px;
-+      cursor:pointer;
-+    }
-+    button:hover {background:#444;}
-+    #controls,#manual {text-align:center;margin-bottom:1em;}
-+    #log {
-+      max-height:200px;
-+      overflow-y:auto;
-+      background:#262626;
-+      padding:1em;
-+      font-family:monospace;
-+      border-radius:4px;
-+      border:1px solid #444;
-+    }
-+    #progressContainer{
-+      width:100%;
-+      background:#333;
-+      border-radius:5px;
-+      height:15px;
-+      margin:1em 0;
-+    }
-+    #progress{
-+      height:100%;
-+      width:0%;
-+      background:limegreen;
-+      border-radius:5px;
-+      transition:width 0.3s;
-+    }
-+  </style>
+  <title>Volcano Hybrid Test Control v0.33</title>
+  <style>
+    body {
+      background:#1e1e1e;
+      color:#f9f9f9;
+      font-family:Arial,Helvetica,sans-serif;
+      margin:2em;
+    }
+    h2 {
+      text-align:center;
+      margin-bottom:1em;
+    }
+    button {
+      background:#333;
+      color:#fff;
+      border:1px solid #555;
+      padding:0.5em 1em;
+      margin:0.3em;
+      border-radius:4px;
+      cursor:pointer;
+    }
+    button:hover {background:#444;}
+    #controls,#manual {text-align:center;margin-bottom:1em;}
+    #log {
+      max-height:200px;
+      overflow-y:auto;
+      background:#262626;
+      padding:1em;
+      font-family:monospace;
+      border-radius:4px;
+      border:1px solid #444;
+    }
+    #progressContainer{
+      width:100%;
+      background:#333;
+      border-radius:5px;
+      height:15px;
+      margin:1em 0;
+    }
+    #progress{
+      height:100%;
+      width:0%;
+      background:limegreen;
+      border-radius:5px;
+      transition:width 0.3s;
+    }
+  </style>
  </head>
  <body>
-+  <h2>Volcano Hybrid - Advanced Control Panel (v0.33)</h2>
-+  <div id="controls">
-+    <button onclick="connect()">🔗 Connect to Volcano</button>
-+    <button onclick="runWorkflowX()">🚀 Start Custom Workflow X</button>
-+    <button onclick="abortWorkflow()">⛔ Abort Workflow</button>
-+    <button onclick="clearLog()">🧹 Clear Log</button>
-+  </div>
-+
-+  <div id="manual">
-+    <input type="number" id="manualTemp" placeholder="Temp °C" min="40" max="230" />
-+    <button onclick="setManualTemperature()">Set Temp</button>
-+    <button id="pumpToggle" onclick="togglePump()">Start Pump</button>
-+  </div>
-+
-+  <p id="status">Status: Not connected</p>
-+  <p>Current Temperature: <span id="currentTemp">-</span>°C</p>
-+  <p>Heater Status: <span id="heaterStatus">Unknown</span></p>
-+  <p>Pump Status: <span id="pumpStatus">Unknown</span></p>
-+  <p>Firmware Version: <span id="firmwareVersion">-</span></p>
-+  <div id="progressContainer"><div id="progress"></div></div>
-+  <div id="log"></div>
+  <h2>Volcano Hybrid - Advanced Control Panel (v0.33)</h2>
+  <div id="controls">
+    <button onclick="connect()">🔗 Connect to Volcano</button>
+    <button onclick="runWorkflowX()">🚀 Start Custom Workflow X</button>
+    <button onclick="abortWorkflow()">⛔ Abort Workflow</button>
+    <button onclick="clearLog()">🧹 Clear Log</button>
+  </div>
+
+  <div id="manual">
+    <input type="number" id="manualTemp" placeholder="Temp °C" min="40" max="230" />
+    <button onclick="setManualTemperature()">Set Temp</button>
+    <button id="pumpToggle" onclick="togglePump()">Start Pump</button>
+  </div>
+
+  <p id="status">Status: Not connected</p>
+  <p>Current Temperature: <span id="currentTemp">-</span>°C</p>
+  <p>Heater Status: <span id="heaterStatus">Unknown</span></p>
+  <p>Pump Status: <span id="pumpStatus">Unknown</span></p>
+  <p>Firmware Version: <span id="firmwareVersion">-</span></p>
+  <div id="progressContainer"><div id="progress"></div></div>
+  <div id="log"></div>
  
    <script>
      let server, service, device;
      let abortFlag = false;
      let workflowActive = false;
-+    let polling = false;
-+    let pumpRunning = false;
-+    const serviceUUID = '10110000-5354-4f52-5a26-4249434b454c';
-+    const pumpOnUUID = '10110013-5354-4f52-5a26-4249434b454c';
-+    const pumpOffUUID = '10110014-5354-4f52-5a26-4249434b454c';
+    let polling = false;
+    let pumpRunning = false;
+    const serviceUUID = '10110000-5354-4f52-5a26-4249434b454c';
+    const pumpOnUUID = '10110013-5354-4f52-5a26-4249434b454c';
+    const pumpOffUUID = '10110014-5354-4f52-5a26-4249434b454c';
  
      const workflowX_temperature = [175, 180, 185, 190, 195];
      const workflowX_holdTimeInMilliSeconds = [10000, 5000, 5000, 5000, 5000];
@@ -95,40 +95,40 @@
        el.scrollTop = el.scrollHeight;
      }
  
-+    function sleep(ms) {
-+      return new Promise(resolve => setTimeout(resolve, ms));
-+    }
-+
-+    function updateProgress(percent) {
-+      const bar = document.getElementById('progress');
-+      if (bar) bar.style.width = percent + '%';
-+    }
-+
-+    function clearLog() {
-+      document.getElementById('log').innerText = '';
-+    }
-+
-+    async function setManualTemperature() {
-+      const val = parseInt(document.getElementById('manualTemp').value, 10);
-+      if (isNaN(val)) {
-+        log('⚠️ Enter a valid temperature');
-+        return;
-+      }
-+      await setTemperature(val * 10);
-+      await startHeater();
-+    }
-+
-+    async function togglePump() {
-+      if (!pumpRunning) {
-+        await startPumpOnly();
-+        pumpRunning = true;
-+        document.getElementById('pumpToggle').innerText = 'Stop Pump';
-+      } else {
-+        await stopPump();
-+        pumpRunning = false;
-+        document.getElementById('pumpToggle').innerText = 'Start Pump';
-+      }
-+    }
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    function updateProgress(percent) {
+      const bar = document.getElementById('progress');
+      if (bar) bar.style.width = percent + '%';
+    }
+
+    function clearLog() {
+      document.getElementById('log').innerText = '';
+    }
+
+    async function setManualTemperature() {
+      const val = parseInt(document.getElementById('manualTemp').value, 10);
+      if (isNaN(val)) {
+        log('⚠️ Enter a valid temperature');
+        return;
+      }
+      await setTemperature(val * 10);
+      await startHeater();
+    }
+
+    async function togglePump() {
+      if (!pumpRunning) {
+        await startPumpOnly();
+        pumpRunning = true;
+        document.getElementById('pumpToggle').innerText = 'Stop Pump';
+      } else {
+        await stopPump();
+        pumpRunning = false;
+        document.getElementById('pumpToggle').innerText = 'Start Pump';
+      }
+    }
  
      async function wait(ms) {
        const interval = 100;
@@ -185,10 +185,10 @@ index 482c4cc13e440f44363b6961480660d6f522b0f5..1ec24a060032d50db11d1df9a08f592b
  
      async function runWorkflowX() {
 
-+    workflowActive = true;
-+    abortFlag = false;
-+    updateProgress(0);
-+    log("========= START WORKFLOW v0.33 =========");
+    workflowActive = true;
+    abortFlag = false;
+    updateProgress(0);
+    log("========= START WORKFLOW v0.33 =========");
    
      try {
        await stopPump();
@@ -233,22 +233,22 @@ index 482c4cc13e440f44363b6961480660d6f522b0f5..1ec24a060032d50db11d1df9a08f592b
          }
    
 
-+        await wait(500);
-+        updateProgress(((i + 1) / workflowX_temperature.length) * 100);
-+      }
+        await wait(500);
+        updateProgress(((i + 1) / workflowX_temperature.length) * 100);
+      }
    
 
-+      await stopPump();
-+      await stopHeater();
-+      updateProgress(100);
-+      log("✅ Workflow completed.");
+      await stopPump();
+      await stopHeater();
+      updateProgress(100);
+      log("✅ Workflow completed.");
      } catch (e) {
        if (e.message === "Aborted") {
 
-+        log("❌ Workflow aborted.");
-+        updateProgress(0);
-+        await stopPump();
-+        await stopHeater();
+        log("❌ Workflow aborted.");
+        updateProgress(0);
+        await stopPump();
+        await stopHeater();
        } else {
          log("⚠️ Error during workflow: " + e);
        }
@@ -272,8 +272,98 @@ index 482c4cc13e440f44363b6961480660d6f522b0f5..1ec24a060032d50db11d1df9a08f592b
      }
  
      async function startHeater() {
-       const char = await service.getCharacteristic('1011000f-5354-4f52-5a26-4249434b454c');
-       await char.writeValue(new Uint8Array([0x01]));
- 
-EOF
-)
+      const char = await service.getCharacteristic('1011000f-5354-4f52-5a26-4249434b454c');
+      await char.writeValue(new Uint8Array([0x01]));
+      log("🔥 Heater ON");
+    }
+
+    async function stopHeater() {
+      const char = await service.getCharacteristic('10110010-5354-4f52-5a26-4249434b454c');
+      await char.writeValue(new Uint8Array([0x01]));
+      log("🛑 Heater OFF");
+    }
+
+    async function waitForTemp(targetTemp) {
+      const char = await service.getCharacteristic('10110001-5354-4f52-5a26-4249434b454c');
+      let temp = 0;
+      while (Math.abs(temp - targetTemp) > 10) {
+        if (abortFlag) throw new Error("Aborted");
+        const value = await char.readValue();
+        temp = new DataView(value.buffer).getUint16(0, true);
+        document.getElementById("currentTemp").innerText = (temp / 10).toFixed(1);
+        log(`Current temp: ${temp / 10}°C`);
+        await wait(1500);
+      }
+      log("✅ Target temperature reached");
+    }
+
+    let pumpSafetyTimer = null;
+    
+    async function startPumpOnly() {
+      const char = await service.getCharacteristic(pumpOnUUID);
+      await char.writeValue(new Uint8Array([0x01]));
+      document.getElementById("pumpStatus").innerText = "ON";
+      log("💨 Pump ON");
+    
+      // Failsafe: Pumpe wird nach 20 Sekunden automatisch gestoppt
+      pumpSafetyTimer = setTimeout(() => {
+        stopPump();
+        log("⛑️ Failsafe: Pump auto-stopped after timeout");
+      }, 20000);
+    }
+    
+    async function stopPump() {
+      if (pumpSafetyTimer) {
+        clearTimeout(pumpSafetyTimer);
+        pumpSafetyTimer = null;
+      }
+      const char = await service.getCharacteristic(pumpOffUUID);
+      await char.writeValue(new Uint8Array([0x00]));
+      document.getElementById("pumpStatus").innerText = "OFF";
+      log("🛑 Pump OFF");
+    }
+
+    async function updateStatuses() {
+      try {
+        const tempChar = await service.getCharacteristic('10110001-5354-4f52-5a26-4249434b454c');
+        const tempVal = await tempChar.readValue();
+        const temp = new DataView(tempVal.buffer).getUint16(0, true);
+        document.getElementById("currentTemp").innerText = (temp / 10).toFixed(1);
+
+        const prj2Char = await server.getPrimaryService('10100000-5354-4f52-5a26-4249434b454c')
+          .then(svc => svc.getCharacteristic('1010000d-5354-4f52-5a26-4249434b454c'));
+        const prj2Val = await prj2Char.readValue();
+        const prj2 = new DataView(prj2Val.buffer).getUint16(0, true);
+        const heaterOn = (prj2 & 0x0004) === 0;
+        document.getElementById("heaterStatus").innerText = heaterOn ? "ON" : "OFF";
+      } catch (err) {
+        log("⚠️ Error updating statuses: " + err);
+      }
+    }
+
+    // Option 2: Safe polling loop for updateStatuses
+    async function pollStatuses() {
+      while (polling) {
+        // Only update statuses if no workflow is running
+        if (!workflowActive) {
+          await updateStatuses();
+        }
+        await sleep(3000); // Sleep between polls
+      }
+    }
+
+    async function preciseWait(ms) {
+    const start = performance.now();
+    while (performance.now() - start < ms) {
+      if (abortFlag) throw new Error("Aborted");
+      await sleep(50); // kleiner Intervall für Reaktionsfähigkeit
+      }
+    }
+
+    
+
+
+    
+  </script>
+</body>
+</html>

@@ -59,6 +59,7 @@
     <button onclick="runWorkflowX()">🚀 Start Custom Workflow X</button>
     <button onclick="abortWorkflow()">⛔ Abort Workflow</button>
     <button onclick="clearLog()">🧹 Clear Log</button>
+    <button onclick="addCustomWorkflow()">➕ Add Workflow</button>
   </div>
 
   <div id="manual">
@@ -83,6 +84,33 @@
     const serviceUUID = '10110000-5354-4f52-5a26-4249434b454c';
     const pumpOnUUID = '10110013-5354-4f52-5a26-4249434b454c';
     const pumpOffUUID = '10110014-5354-4f52-5a26-4249434b454c';
+
+    const customWorkflows = {};
+
+    function saveWorkflows() {
+      try {
+        localStorage.setItem('customWorkflows', JSON.stringify(customWorkflows));
+      } catch (e) {
+        console.error('Failed to save workflows', e);
+      }
+    }
+
+    function loadWorkflows() {
+      try {
+        const data = localStorage.getItem('customWorkflows');
+        if (!data) return;
+        const stored = JSON.parse(data);
+        Object.keys(stored).forEach(name => {
+          customWorkflows[name] = stored[name];
+          const btn = document.createElement('button');
+          btn.textContent = '🚀 Run ' + name;
+          btn.onclick = () => runWorkflow(customWorkflows[name]);
+          document.getElementById('controls').appendChild(btn);
+        });
+      } catch (e) {
+        console.error('Failed to load workflows', e);
+      }
+    }
 
     const workflowX_temperature = [175, 180, 185, 190, 195];
     const workflowX_holdTimeInMilliSeconds = [10000, 5000, 5000, 5000, 5000];
@@ -187,74 +215,126 @@
       }
     }
 
-    async function runWorkflowX() {
-    workflowActive = true;
-    abortFlag = false;
-    log("========= START WORKFLOW v0.32 =========");
-  
-    try {
-      await stopPump();
-      await sleep(300);
-      await stopHeater();
-      await sleep(300);
-  
-      for (let i = 0; i < workflowX_temperature.length; i++) {
-        if (abortFlag) throw new Error("Aborted");
-  
-        const targetTemp = workflowX_temperature[i] * 10;
-        const holdTime = workflowX_holdTimeInMilliSeconds[i];
-        const pumpTime = workflowX_pumpTimeInMilliSeconds[i];
-  
-        log(`🧭 STEP ${i + 1}: Target ${targetTemp / 10}°C, Hold ${holdTime}ms, Pump ${pumpTime}ms`);
-  
+    async function runWorkflow(config) {
+      const temps = config.temperature;
+      const holds = config.holdTimeInMilliSeconds;
+      const pumps = config.pumpTimeInMilliSeconds;
+
+      workflowActive = true;
+      abortFlag = false;
+      log(`========= START ${config.name || "WORKFLOW"} =========`);
+
+      try {
         await stopPump();
         await sleep(300);
-  
-        await setTemperature(targetTemp);
-        await wait(2000);
-        if (abortFlag) throw new Error("Aborted");
-  
-        await startHeater();
-        await wait(500);
-  
-        await waitForTemp(targetTemp);
-        if (abortFlag) throw new Error("Aborted");
-  
-        log(`⏳ Holding for ${holdTime}ms`);
-        await preciseWait(holdTime);
-        if (abortFlag) throw new Error("Aborted");
-  
-        if (pumpTime > 0) {
-          await startPumpOnly();
-          log(`💨 Pumping for ${pumpTime}ms`);
-          await preciseWait(pumpTime);
+        await stopHeater();
+        await sleep(300);
+
+        for (let i = 0; i < temps.length; i++) {
+          if (abortFlag) throw new Error("Aborted");
+
+          const targetTemp = temps[i] * 10;
+          const holdTime = holds[i];
+          const pumpTime = pumps[i];
+
+          log(`🧭 STEP ${i + 1}: Target ${targetTemp / 10}°C, Hold ${holdTime}ms, Pump ${pumpTime}ms`);
+
           await stopPump();
-          log("🛑 Pump OFF");
-        } else {
-          log("⏭️ Skipping pump phase");
+          await sleep(300);
+
+          await setTemperature(targetTemp);
+          await wait(2000);
+          if (abortFlag) throw new Error("Aborted");
+
+          await startHeater();
+          await wait(500);
+
+          await waitForTemp(targetTemp);
+          if (abortFlag) throw new Error("Aborted");
+
+          log(`⏳ Holding for ${holdTime}ms`);
+          await preciseWait(holdTime);
+          if (abortFlag) throw new Error("Aborted");
+
+          if (pumpTime > 0) {
+            await startPumpOnly();
+            log(`💨 Pumping for ${pumpTime}ms`);
+            await preciseWait(pumpTime);
+            await stopPump();
+            log("🛑 Pump OFF");
+          } else {
+            log("⏭️ Skipping pump phase");
+          }
+
+          await wait(500);
+          updateProgress(((i + 1) / temps.length) * 100);
         }
-  
-        await wait(500);
-        updateProgress(((i + 1) / workflowX_temperature.length) * 100);
-      }
-  
-      await stopPump();
-      await stopHeater();
-      updateProgress(100);
-      log("✅ Workflow completed.");
-    } catch (e) {
-      if (e.message === "Aborted") {
-        log("❌ Workflow aborted.");
-        updateProgress(0);
+
         await stopPump();
         await stopHeater();
-      } else {
-        log("⚠️ Error during workflow: " + e);
+        updateProgress(100);
+        log("✅ Workflow completed.");
+      } catch (e) {
+        if (e.message === "Aborted") {
+          log("❌ Workflow aborted.");
+          updateProgress(0);
+          await stopPump();
+          await stopHeater();
+        } else {
+          log("⚠️ Error during workflow: " + e);
+        }
+      } finally {
+        workflowActive = false;
       }
-    } finally {
-      workflowActive = false;
     }
-  }
+
+    function runWorkflowX() {
+      runWorkflow({
+        name: 'Workflow X',
+        temperature: workflowX_temperature,
+        holdTimeInMilliSeconds: workflowX_holdTimeInMilliSeconds,
+        pumpTimeInMilliSeconds: workflowX_pumpTimeInMilliSeconds
+      });
+    }
+
+    function addCustomWorkflow() {
+      const name = prompt('Workflow name:');
+      if (!name) return;
+      const tempInput = prompt('Temperatures (comma separated °C):');
+      if (!tempInput) return;
+      const holdInput = prompt('Hold times (comma separated ms):');
+      if (!holdInput) return;
+      const pumpInput = prompt('Pump times (comma separated ms, max 35000):');
+      if (!pumpInput) return;
+
+      const temps = tempInput.split(',').map(v => parseInt(v.trim(), 10));
+      const holds = holdInput.split(',').map(v => parseInt(v.trim(), 10));
+      const pumps = pumpInput.split(',').map(v => parseInt(v.trim(), 10));
+
+      if (temps.length !== holds.length || temps.length !== pumps.length) {
+        alert('Arrays must be of equal length');
+        return;
+      }
+      if (pumps.some(p => isNaN(p) || p > 35000)) {
+        alert('Pump times must be numbers ≤ 35000');
+        return;
+      }
+
+      customWorkflows[name] = {
+        name,
+        temperature: temps,
+        holdTimeInMilliSeconds: holds,
+        pumpTimeInMilliSeconds: pumps
+      };
+
+      saveWorkflows();
+
+      const btn = document.createElement('button');
+      btn.textContent = '🚀 Run ' + name;
+      btn.onclick = () => runWorkflow(customWorkflows[name]);
+      document.getElementById('controls').appendChild(btn);
+      log('Added workflow ' + name);
+    }
 
 
     function abortWorkflow() {
@@ -359,10 +439,10 @@
       }
     }
 
-    
+    // Restore previously saved workflows on page load
+    loadWorkflows();
 
 
-    
   </script>
 </body>
 </html>
